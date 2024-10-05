@@ -60,7 +60,7 @@ function generateUseCaseScaffold(useCaseName) {
 import { ${useCaseName}Data, Input } from "@/cases/${useCaseName}/types";
 import ${capitalize(
     useCaseName
-  )}Repository from "@/repositories/${useCaseName}";
+  )}Repository from "@/repositories/${useCaseName}Repository";
 
 export default class ${capitalize(useCaseName)}Controller {
   ${useCaseName}Repository: ${capitalize(useCaseName)}Repository;
