@@ -39,7 +39,7 @@ function createFile(filePath, content) {
 }
 
 function generateUseCaseScaffold(useCaseName) {
-  const basePath = path.join(process.cwd(), useCaseName);
+  const basePath = path.join(process.cwd(), "src", "cases", useCaseName);
 
   // Crear directorios
   createDirectory(basePath);
@@ -53,8 +53,8 @@ function generateUseCaseScaffold(useCaseName) {
 import "dotenv/config";
 import { createApp, UseCaseResult, UsecaseType } from "urunner-lib";
 import { Logger } from "@/shared/logger";
-import { ${useCaseName}Data, Input, Output } from "./${useCaseName}/types";
-import { ${capitalize(useCaseName)}ServiceImpl } from "./${useCaseName}/impl";
+import { ${useCaseName}Data, Input, Output } from "./types";
+import { ${capitalize(useCaseName)}ServiceImpl } from "./impl";
 
 interface Dependencies {
   logger: Logger;
@@ -112,7 +112,7 @@ export default usecase${capitalize(useCaseName)};
 import { ${useCaseName}Data, Input } from "../types";
 
 export default interface ${capitalize(useCaseName)}ServiceManager {
-  execute(params: Input): Promise<${useCaseName}Data | undefined>;
+  ${useCaseName}(params: Input): Promise<${useCaseName}Data | undefined>;
 }
 `;
 
@@ -127,6 +127,14 @@ export interface ${useCaseName}Data {
 
 export interface Output {
   // Define your output type here
+}
+`;
+
+  const implContent = `
+import { ${useCaseName}Data, Input } from "../types";
+
+export default interface ${capitalize(useCaseName)}ServiceManager {
+  ${useCaseName}(params: Input): Promise<${useCaseName}Data | undefined>;
 }
 `;
 
@@ -145,14 +153,15 @@ describe('${capitalize(useCaseName)} Use Case', () => {
 `;
 
   createFile(path.join(basePath, "index.ts"), indexContent);
-  createFile(path.join(basePath, "manager", "manager.ts"), managerContent);
+  createFile(path.join(basePath, "manager", "index.ts"), managerContent);
   createFile(path.join(basePath, "types", "index.ts"), typesContent);
+  createFile(path.join(basePath, "impl", "index.ts"), implContent);
   createFile(
     path.join(basePath, "__tests__", `${useCaseName}.test.ts`),
     testContent
   );
 
   console.log(
-    `Scaffold for use case '${useCaseName}' has been created successfully.`
+    `Scaffold for use case '${useCaseName}' has been created successfully in src/cases/${useCaseName}.`
   );
 }
