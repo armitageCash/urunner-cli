@@ -9,17 +9,31 @@ const packageJson = require("./package.json");
 
 program
   .version(packageJson.version, "--version", "Output the current version")
-  .description("Generate a scaffold for a use case")
+  .description("Generate a scaffold for a use case or create an empty project")
   .action(() => {
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
     });
 
-    rl.question("Enter the name of the use case: ", (useCaseName) => {
-      generateUseCaseScaffold(useCaseName);
-      rl.close();
-    });
+    rl.question(
+      "Select an option:\n1. Generate use case scaffold\n2. Generate empty project\nEnter your choice (1 or 2): ",
+      (choice) => {
+        if (choice === "1") {
+          rl.question("Enter the name of the use case: ", (useCaseName) => {
+            generateUseCaseScaffold(useCaseName);
+            rl.close();
+          });
+        } else if (choice === "2") {
+          generateEmptyProject(rl);
+        } else {
+          console.log(
+            "Invalid choice. Please run the command again and select 1 or 2."
+          );
+          rl.close();
+        }
+      }
+    );
   });
 
 program.parse(process.argv);
@@ -45,7 +59,7 @@ function generateUseCaseScaffold(useCaseName) {
   const repositoryPath = path.join(basePath, "repositories");
   const sharedPath = path.join(basePath, "shared");
 
-  // Crear directorios
+  // Create directories
   createDirectory(casePath);
   createDirectory(path.join(casePath, "impl"));
   createDirectory(path.join(casePath, "manager"));
@@ -55,12 +69,12 @@ function generateUseCaseScaffold(useCaseName) {
   createDirectory(repositoryPath);
   createDirectory(sharedPath);
 
-  // Crear archivos
+  // Create files
   const controllerContent = `
 import { ${useCaseName}Data, Input } from "@/cases/${useCaseName}/types";
 import ${capitalize(
     useCaseName
-  )}Repository from "@/repositories/${useCaseName}Repository";
+  )}Repository from "@/repositories/${useCaseName}";
 
 export default class ${capitalize(useCaseName)}Controller {
   ${useCaseName}Repository: ${capitalize(useCaseName)}Repository;
@@ -92,7 +106,7 @@ export default class ${capitalize(useCaseName)}Repository extends Repository {
 
   async findData(input: Input): Promise<${useCaseName}Data | undefined> {
     return this.database
-      .instance<${useCaseName}Data>("TableName") // Especifique el nombre de la tabla aquí
+      .instance<${useCaseName}Data>("TableName") // Specify the table name here
       .where(input)
       .first();
   }
@@ -157,27 +171,27 @@ import { ${capitalize(
     useCaseName
   )}ServiceImpl } from "@/cases/${useCaseName}/impl";
 
-// Define las dependencias
+// Define the dependencies
 interface Dependencies {
   logger: Logger;
   ${useCaseName}Service: ${capitalize(useCaseName)}ServiceImpl;
 }
 
-// Define el tipo para el caso de uso
+// Define the type for the use case
 type ${capitalize(useCaseName)}UsecaseType = UsecaseType<
   Input,
   Dependencies,
   UseCaseResult<${useCaseName}Data>
 >;
 
-// Crea un adaptador
+// Create an adapter
 const adapter =
   (fn: ${capitalize(useCaseName)}UsecaseType) =>
   async (params: Input, dependencies: Dependencies) => {
     return await fn(params, dependencies);
   };
 
-// Define el caso de uso
+// Define the use case
 export const ${useCaseName}: ${capitalize(useCaseName)}UsecaseType = async (
   params: Input,
   dependencies: Dependencies
@@ -189,19 +203,19 @@ export const ${useCaseName}: ${capitalize(useCaseName)}UsecaseType = async (
     return {
       data: response,
       status: "success",
-      message: "${capitalize(useCaseName)} ejecutado correctamente.",
+      message: "${capitalize(useCaseName)} executed successfully.",
     };
   } catch (e) {
     console.log("e", e);
     return {
       data: null,
-      message: "Error en ${useCaseName}",
+      message: "Error in ${useCaseName}",
       status: "error",
     };
   }
 };
 
-// Crea la instancia del caso de uso
+// Create the use case instance
 const usecase${capitalize(
     useCaseName
   )} = createApp(adapter(${useCaseName})).attach(
@@ -274,4 +288,138 @@ export class ${capitalize(useCaseName)}ServiceImpl implements ${capitalize(
   console.log(
     `Implementation file created in src/cases/${useCaseName}/impl/index.ts`
   );
+}
+
+function generatePackageJson(projectName, author, description) {
+  return `
+{
+  "name": "${projectName}",
+  "version": "1.0.0",
+  "description": "${description}",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "test": "jest"
+  },
+  "author": "${author}",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.12",
+    "@types/jest": "^27.0.3",
+    "jest": "^27.4.5",
+    "ts-jest": "^27.1.2",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.4"
+  }
+}
+`;
+}
+
+function generateEmptyProject(rl) {
+  rl.question("Enter the name of the project: ", (projectName) => {
+    rl.question("Enter the author name: ", (author) => {
+      rl.question(
+        "Enter a brief description of the project: ",
+        (description) => {
+          const projectPath = path.join(process.cwd(), projectName);
+          const srcPath = path.join(projectPath, "src");
+
+          // Create project directory
+          createDirectory(projectPath);
+
+          // Create src directory
+          createDirectory(srcPath);
+
+          // Create package.json
+          const packageJsonContent = generatePackageJson(
+            projectName,
+            author,
+            description
+          );
+          createFile(
+            path.join(projectPath, "package.json"),
+            packageJsonContent
+          );
+
+          // Create tsconfig.json
+          const tsconfigContent = `
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "target": "es2020",
+    "module": "commonjs",
+    "lib": ["es2020"],
+    "outDir": "./dist/src",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "types": ["node", "jest"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
+`;
+          createFile(path.join(projectPath, "tsconfig.json"), tsconfigContent);
+
+          // Create .env.ts
+          const envContent = `
+export const ENV = {
+  // Add your environment variables here
+  // Example:
+  // API_URL: process.env.API_URL || 'http://localhost:3000',
+};
+`;
+          createFile(path.join(srcPath, ".env.ts"), envContent);
+
+          // Create README.md
+          const readmeContent = `
+# ${projectName}
+
+${description}
+
+## Installation
+\`\`\`
+npm install
+\`\`\`
+
+## Usage
+Add instructions on how to use your project.
+
+## Scripts
+- \`npm start\`: Run the project
+- \`npm run build\`: Build the project
+- \`npm test\`: Run tests
+
+## License
+ISC
+
+## Author
+${author}
+`;
+          createFile(path.join(projectPath, "README.md"), readmeContent);
+
+          console.log(
+            `Empty project '${projectName}' has been created successfully.`
+          );
+          console.log(`Project structure:`);
+          console.log(`${projectName}/`);
+          console.log(`├── src/`);
+          console.log(`│   └── .env.ts`);
+          console.log(`├── package.json`);
+          console.log(`├── tsconfig.json`);
+          console.log(`└── README.md`);
+
+          rl.close();
+        }
+      );
+    });
+  });
 }
