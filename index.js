@@ -148,6 +148,100 @@ export interface Output {
 }
 `;
 
+  const indexContent = `
+import "dotenv/config";
+import { createApp, UseCaseResult, UsecaseType } from "urunner-lib";
+import { Logger } from "@/shared/logger";
+import { ${useCaseName}Data, Input, Output } from "@/cases/${useCaseName}/types";
+import { ${capitalize(
+    useCaseName
+  )}ServiceImpl } from "@/cases/${useCaseName}/impl";
+
+// Define las dependencias
+interface Dependencies {
+  logger: Logger;
+  ${useCaseName}Service: ${capitalize(useCaseName)}ServiceImpl;
+}
+
+// Define el tipo para el caso de uso
+type ${capitalize(useCaseName)}UsecaseType = UsecaseType<
+  Input,
+  Dependencies,
+  UseCaseResult<${useCaseName}Data>
+>;
+
+// Crea un adaptador
+const adapter =
+  (fn: ${capitalize(useCaseName)}UsecaseType) =>
+  async (params: Input, dependencies: Dependencies) => {
+    return await fn(params, dependencies);
+  };
+
+// Define el caso de uso
+export const ${useCaseName}: ${capitalize(useCaseName)}UsecaseType = async (
+  params: Input,
+  dependencies: Dependencies
+) => {
+  const { logger: log, ${useCaseName}Service } = dependencies;
+
+  try {
+    const response = await ${useCaseName}Service.execute(params);
+    return {
+      data: response,
+      status: "success",
+      message: "${capitalize(useCaseName)} ejecutado correctamente.",
+    };
+  } catch (e) {
+    console.log("e", e);
+    return {
+      data: null,
+      message: "Error en ${useCaseName}",
+      status: "error",
+    };
+  }
+};
+
+// Crea la instancia del caso de uso
+const usecase${capitalize(
+    useCaseName
+  )} = createApp(adapter(${useCaseName})).attach(
+  (dependencies: Dependencies) => {
+    dependencies.logger = new Logger();
+    dependencies.${useCaseName}Service = new ${capitalize(
+    useCaseName
+  )}ServiceImpl();
+  }
+);
+
+export default usecase${capitalize(useCaseName)};
+`;
+
+  const managerContent = `
+import { ${useCaseName}Data, Input } from "@/cases/${useCaseName}/types";
+
+export default interface ${capitalize(useCaseName)}ServiceManager {
+  execute(params: Input): Promise<${useCaseName}Data | undefined>;
+}
+`;
+
+  const implContent = `
+import ${capitalize(
+    useCaseName
+  )}ServiceManager from "@/cases/${useCaseName}/manager";
+import { ${useCaseName}Data, Input } from "@/cases/${useCaseName}/types";
+import ${capitalize(
+    useCaseName
+  )}Controller from "@/controllers/${useCaseName}Controller";
+
+export class ${capitalize(useCaseName)}ServiceImpl implements ${capitalize(
+    useCaseName
+  )}ServiceManager {
+  async execute(params: Input): Promise<${useCaseName}Data> {
+    return new ${capitalize(useCaseName)}Controller().execute(params);
+  }
+}
+`;
+
   createFile(
     path.join(controllerPath, `${useCaseName}Controller.ts`),
     controllerContent
@@ -158,6 +252,9 @@ export interface Output {
   );
   createFile(path.join(sharedPath, "repository.ts"), baseRepositoryContent);
   createFile(path.join(casePath, "types", "index.ts"), typesContent);
+  createFile(path.join(casePath, "index.ts"), indexContent);
+  createFile(path.join(casePath, "manager", "index.ts"), managerContent);
+  createFile(path.join(casePath, "impl", "index.ts"), implContent);
 
   console.log(
     `Scaffold for use case '${useCaseName}' has been created successfully.`
@@ -170,4 +267,11 @@ export interface Output {
   );
   console.log(`Base Repository created in src/shared/repository.ts`);
   console.log(`Types created in src/cases/${useCaseName}/types/index.ts`);
+  console.log(`Main index file created in src/cases/${useCaseName}/index.ts`);
+  console.log(
+    `Manager file created in src/cases/${useCaseName}/manager/index.ts`
+  );
+  console.log(
+    `Implementation file created in src/cases/${useCaseName}/impl/index.ts`
+  );
 }
