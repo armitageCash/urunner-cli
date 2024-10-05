@@ -4,7 +4,7 @@
   "description": "CLI tool to generate use case scaffolds",
   "main": "index.js",
   "bin": {
-    "usecase-scaffold": "./index.js"
+    "urruner-scaffold": "./index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
