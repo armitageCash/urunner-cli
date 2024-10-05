@@ -1,0 +1,22 @@
+{
+  "name": "urunner-scaffold-generator",
+  "version": "1.0.0",
+  "description": "CLI tool to generate use case scaffolds",
+  "main": "index.js",
+  "bin": {
+    "usecase-scaffold": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "scaffold",
+    "usecase"
+  ],
+  "author": "Andrew Castro",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^8.3.0"
+  }
+}
