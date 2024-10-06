@@ -58,6 +58,7 @@ function generateUseCaseScaffold(useCaseName) {
   const controllerPath = path.join(basePath, "controllers");
   const repositoryPath = path.join(basePath, "repositories");
   const sharedPath = path.join(basePath, "shared");
+  const domainPath = path.join(basePath, "domain");
 
   // Create directories
   createDirectory(casePath);
@@ -68,13 +69,14 @@ function generateUseCaseScaffold(useCaseName) {
   createDirectory(controllerPath);
   createDirectory(repositoryPath);
   createDirectory(sharedPath);
+  createDirectory(domainPath);
 
   // Create files
   const controllerContent = `
 import { ${useCaseName}Data, Input } from "@/cases/${useCaseName}/types";
 import ${capitalize(
     useCaseName
-  )}Repository from "@/repositories/${useCaseName}";
+  )}Repository from "@/repositories/${useCaseName}Repository";
 
 export default class ${capitalize(useCaseName)}Controller {
   ${useCaseName}Repository: ${capitalize(useCaseName)}Repository;
@@ -256,6 +258,50 @@ export class ${capitalize(useCaseName)}ServiceImpl implements ${capitalize(
 }
 `;
 
+  const domainTypeContent = `
+export interface ${capitalize(useCaseName)}Entity {
+  // Define your entity properties here
+  id: number;
+  // Add more properties as needed
+}
+`;
+
+  const testContent = `
+import { ${capitalize(useCaseName)}ServiceImpl } from '../impl';
+import ${capitalize(
+    useCaseName
+  )}Controller from '@/controllers/${useCaseName}Controller';
+
+jest.mock('@/controllers/${useCaseName}Controller');
+
+describe('${capitalize(useCaseName)}ServiceImpl', () => {
+  let service: ${capitalize(useCaseName)}ServiceImpl;
+  let mockController: jest.Mocked<${capitalize(useCaseName)}Controller>;
+
+  beforeEach(() => {
+    mockController = new ${capitalize(
+      useCaseName
+    )}Controller() as jest.Mocked<${capitalize(useCaseName)}Controller>;
+    service = new ${capitalize(useCaseName)}ServiceImpl();
+    (service as any).controller = mockController;
+  });
+
+  it('should execute the controller', async () => {
+    const mockInput = { /* add mock input here */ };
+    const mockOutput = { /* add mock output here */ };
+
+    mockController.execute.mockResolvedValue(mockOutput);
+
+    const result = await service.execute(mockInput);
+
+    expect(mockController.execute).toHaveBeenCalledWith(mockInput);
+    expect(result).toEqual(mockOutput);
+  });
+
+  // Add more test cases as needed
+});
+`;
+
   createFile(
     path.join(controllerPath, `${useCaseName}Controller.ts`),
     controllerContent
@@ -269,6 +315,11 @@ export class ${capitalize(useCaseName)}ServiceImpl implements ${capitalize(
   createFile(path.join(casePath, "index.ts"), indexContent);
   createFile(path.join(casePath, "manager", "index.ts"), managerContent);
   createFile(path.join(casePath, "impl", "index.ts"), implContent);
+  createFile(path.join(domainPath, `${useCaseName}.ts`), domainTypeContent);
+  createFile(
+    path.join(casePath, "__tests__", `${useCaseName}.test.ts`),
+    testContent
+  );
 
   console.log(
     `Scaffold for use case '${useCaseName}' has been created successfully.`
@@ -288,13 +339,17 @@ export class ${capitalize(useCaseName)}ServiceImpl implements ${capitalize(
   console.log(
     `Implementation file created in src/cases/${useCaseName}/impl/index.ts`
   );
+  console.log(`Domain type created in src/domain/${useCaseName}.ts`);
+  console.log(
+    `Test file created in src/cases/${useCaseName}/__tests__/${useCaseName}.test.ts`
+  );
 }
 
 function generatePackageJson(projectName, author, description) {
   return `
 {
   "name": "${projectName}",
-  "version": "1.0.0",
+  "version": "1.0ментах.0",
   "description": "${description}",
   "main": "index.js",
   "scripts": {
@@ -369,15 +424,13 @@ function generateEmptyProject(rl) {
 `;
           createFile(path.join(projectPath, "tsconfig.json"), tsconfigContent);
 
-          // Create .env.ts
+          // Create .env in the root
           const envContent = `
-export const ENV = {
-  // Add your environment variables here
-  // Example:
-  // API_URL: process.env.API_URL || 'http://localhost:3000',
-};
+# Add your environment variables here
+# Example:
+# API_URL=http://localhost:3000
 `;
-          createFile(path.join(srcPath, ".env.ts"), envContent);
+          createFile(path.join(projectPath, ".env"), envContent);
 
           // Create README.md
           const readmeContent = `
@@ -412,7 +465,7 @@ ${author}
           console.log(`Project structure:`);
           console.log(`${projectName}/`);
           console.log(`├── src/`);
-          console.log(`│   └── .env.ts`);
+          console.log(`├── .env`);
           console.log(`├── package.json`);
           console.log(`├── tsconfig.json`);
           console.log(`└── README.md`);
